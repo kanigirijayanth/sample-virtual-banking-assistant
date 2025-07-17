@@ -51,6 +51,9 @@ import httpx
 from fastapi import FastAPI, WebSocket, Request, Response
 import uvicorn
 
+# Import knowledge base integration
+from kb_integration import KnowledgeBaseEnhancer, get_kb_information
+
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer, VADParams
@@ -138,8 +141,21 @@ weather_function = FunctionSchema(
     required=["username", "account_type"],
 )
 
+# Create KB function schema
+kb_function = FunctionSchema(
+    name="get_kb_information",
+    description="Get information from the knowledge base about cloud operations, AWS services, and best practices.",
+    properties={
+        "query": {
+            "type": "string",
+            "description": "The query to search for in the knowledge base.",
+        }
+    },
+    required=["query"],
+)
+
 # Create tools schema
-tools = ToolsSchema(standard_tools=[weather_function])
+tools = ToolsSchema(standard_tools=[weather_function, kb_function])
 
 async def setup(websocket: WebSocket):
     """
@@ -156,7 +172,12 @@ async def setup(websocket: WebSocket):
     """
     update_dredentials()
     
-    system_instruction = Path('prompt.txt').read_text() + f"\n{AWSNovaSonicLLMService.AWAIT_TRIGGER_ASSISTANT_RESPONSE_INSTRUCTION}"
+    # Initialize knowledge base enhancer
+    kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+    
+    # Enhance system instruction with KB capabilities
+    base_instruction = Path('prompt.txt').read_text()
+    system_instruction = kb_enhancer.enhance_system_prompt(base_instruction) + f"\n{AWSNovaSonicLLMService.AWAIT_TRIGGER_ASSISTANT_RESPONSE_INSTRUCTION}"
 
     # Configure WebSocket transport with audio processing capabilities
     transport = FastAPIWebsocketTransport(websocket, FastAPIWebsocketParams(
@@ -185,8 +206,9 @@ async def setup(websocket: WebSocket):
         params=params
     )
 
-    # Register function for function calls
+    # Register functions for function calls
     llm.register_function("get_balance", get_balance_from_api)
+    llm.register_function("get_kb_information", get_kb_information)
 
     # Set up conversation context
     context = OpenAILLMContext(

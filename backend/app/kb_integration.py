@@ -4,9 +4,47 @@ import json
 import boto3
 from pathlib import Path
 
-# Add parent directory to path to import the integration module
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-from integrate_kb_with_app import create_kb_retrieval_function
+# Define the KB retrieval function directly
+def create_kb_retrieval_function(kb_id, region="us-east-1"):
+    """
+    Create a function that retrieves information from a Bedrock knowledge base.
+    
+    Args:
+        kb_id (str): Knowledge base ID
+        region (str): AWS region
+        
+    Returns:
+        function: A function that takes a query and returns knowledge base results
+    """
+    bedrock_agent_runtime = boto3.client("bedrock-agent-runtime", region_name=region)
+    
+    def retrieve_from_kb(query, max_results=3):
+        try:
+            response = bedrock_agent_runtime.retrieve(
+                knowledgeBaseId=kb_id,
+                retrievalQuery={
+                    "text": query
+                },
+                retrievalConfiguration={
+                    "vectorSearchConfiguration": {
+                        "numberOfResults": max_results
+                    }
+                }
+            )
+            
+            results = []
+            for result in response.get("retrievalResults", []):
+                content = result.get("content", {})
+                text = content.get("text", "")
+                source = result.get("location", {}).get("s3Location", {}).get("uri", "Unknown source")
+                results.append(f"Source: {source}\n{text}\n")
+            
+            return "\n\n".join(results) if results else ""
+        except Exception as e:
+            print(f"Error retrieving from knowledge base: {e}")
+            return ""
+    
+    return retrieve_from_kb
 
 class KnowledgeBaseEnhancer:
     """
@@ -22,14 +60,10 @@ class KnowledgeBaseEnhancer:
             region (str): AWS region
             max_results (int): Maximum number of results to retrieve from the knowledge base
         """
-        # Get knowledge base ID from environment variable if not provided
-        self.kb_id = kb_id or os.environ.get("BEDROCK_KB_ID")
-        if not self.kb_id:
-            print("Warning: No knowledge base ID provided. Knowledge base enhancement will be disabled.")
-            self.retrieve_from_kb = None
-        else:
-            # Create the retrieval function
-            self.retrieve_from_kb = create_kb_retrieval_function(self.kb_id, region)
+        # Use specific knowledge base ID
+        self.kb_id = kb_id or os.environ.get("BEDROCK_KB_ID") or "40KPMEUSQC"
+        # Create the retrieval function
+        self.retrieve_from_kb = create_kb_retrieval_function(self.kb_id, region)
         
         self.max_results = max_results
     
