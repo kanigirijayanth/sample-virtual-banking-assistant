@@ -12,9 +12,9 @@
 # **********************************************************************************************************************/
 
 """
-AWS CDK Stack for Virtual Banking Assistant
+AWS CDK Stack for Virtual Cloud Operations Assistant
 
-This module defines the AWS CDK stack for deploying the Virtual Banking Assistant infrastructure.
+This module defines the AWS CDK stack for deploying the Virtual Cloud Operations Assistant infrastructure.
 It sets up all necessary AWS resources including:
 - ECS Fargate service for running the backend
 - Network Load Balancer for handling WebSocket connections
@@ -52,9 +52,9 @@ import cdk_nag
 container_port = 8000
 
 class CdkStack(Stack):
-    """CDK Stack for Virtual Banking Assistant infrastructure.
+    """CDK Stack for Virtual Cloud Operations Assistant infrastructure.
     
-    This stack creates all necessary AWS resources for running the Virtual Banking Assistant,
+    This stack creates all necessary AWS resources for running the Virtual Cloud Operations Assistant,
     including compute resources, networking, authentication, and frontend hosting.
     """
 
@@ -73,25 +73,25 @@ class CdkStack(Stack):
         certificate_arn = self.node.try_get_context('certificate-arn')
         
         # Get reference to existing VPC and subnets
-        vpc = ec2.Vpc.from_vpc_attributes(self, "VirtualBankingAssistantVPC",
+        vpc = ec2.Vpc.from_vpc_attributes(self, "VirtualCloudOperationsAssistantVPC",
             vpc_id=vpc_config['vpcId'],
             availability_zones=vpc_config['availabilityZones'],
             public_subnet_ids=vpc_config['publicSubnetIds']
         )
 
         # Create ECS Cluster in existing VPC
-        cluster = ecs.Cluster(self, "VirtualBankingAssistantCluster",
+        cluster = ecs.Cluster(self, "VirtualCloudOperationsAssistantCluster",
             vpc=vpc,
         )
 
         # Build and push Docker image to ECR
-        docker_image = ecr_assets.DockerImageAsset(self, "VirtualBankingAssistantImage",
+        docker_image = ecr_assets.DockerImageAsset(self, "VirtualCloudOperationsAssistantImage",
             directory=".",
             file="Dockerfile"
         )
 
         # Create Task Role with required permissions
-        task_role = iam.Role(self, "VirtualBankingAssistantTaskRole",
+        task_role = iam.Role(self, "VirtualCloudOperationsAssistantTaskRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             description="Role for Voice ECS Task"
         )
@@ -113,7 +113,7 @@ class CdkStack(Stack):
         )
 
         # Create security group for the Fargate service
-        security_group = ec2.SecurityGroup(self, "VirtualBankingAssistantServiceSG",
+        security_group = ec2.SecurityGroup(self, "VirtualCloudOperationsAssistantServiceSG",
             vpc=vpc,
             allow_all_outbound=True,
             description="Security group for FastAPI service"
@@ -125,20 +125,20 @@ class CdkStack(Stack):
         )
 
         # Task Definition for Fargate
-        task_def = ecs.FargateTaskDefinition(self, "VirtualBankingAssistantTaskDef", 
+        task_def = ecs.FargateTaskDefinition(self, "VirtualCloudOperationsAssistantTaskDef", 
             task_role=task_role,
             execution_role=task_role,
             cpu=2048,
             memory_limit_mib=4096,
         )
-        container = task_def.add_container("VirtualBankingAssistantContainer",
+        container = task_def.add_container("VirtualCloudOperationsAssistantContainer",
             image=ecs.ContainerImage.from_docker_image_asset(docker_image),
-            logging=ecs.LogDriver.aws_logs(stream_prefix="VirtualBankingAssistant")
+            logging=ecs.LogDriver.aws_logs(stream_prefix="VirtualCloudOperationsAssistant")
         )
         container.add_port_mappings(ecs.PortMapping(container_port=container_port, protocol=ecs.Protocol.TCP))
 
         # ECS Fargate Service in private subnets
-        service = ecs.FargateService(self, "VirtualBankingAssistantFargateService",
+        service = ecs.FargateService(self, "VirtualCloudOperationsAssistantFargateService",
             cluster=cluster,
             task_definition=task_def,
             assign_public_ip=False,
@@ -155,7 +155,7 @@ class CdkStack(Stack):
         )
 
         # Network Load Balancer in public subnets
-        nlb = elbv2.NetworkLoadBalancer(self, "VirtualBankingAssistantNLB",
+        nlb = elbv2.NetworkLoadBalancer(self, "VirtualCloudOperationsAssistantNLB",
             vpc=vpc,
             internet_facing=True,
             cross_zone_enabled=True,
@@ -168,7 +168,7 @@ class CdkStack(Stack):
         )
 
         # TCP Target Group for WebSocket traffic
-        target_group = elbv2.NetworkTargetGroup(self, "VirtualBankingAssistantTargetGroup",
+        target_group = elbv2.NetworkTargetGroup(self, "VirtualCloudOperationsAssistantTargetGroup",
             vpc=vpc,
             port=container_port,
             protocol=elbv2.Protocol.TCP,
@@ -189,7 +189,7 @@ class CdkStack(Stack):
         service.attach_to_network_target_group(target_group)
 
         # Configure NLB Listener
-        listener = nlb.add_listener("VirtualBankingAssistantHttpListener",
+        listener = nlb.add_listener("VirtualCloudOperationsAssistantHttpListener",
             port=443 if certificate_arn else 80,
             protocol=elbv2.Protocol.TLS if certificate_arn else elbv2.Protocol.TCP,
             certificates=[elbv2.ListenerCertificate.from_arn(certificate_arn)] if certificate_arn else [],
@@ -197,7 +197,7 @@ class CdkStack(Stack):
         )
 
         # Create Cognito User Pool
-        user_pool = cognito.UserPool(self, "VirtualBankingAssistantUserpool",
+        user_pool = cognito.UserPool(self, "VirtualCloudOperationsAssistantUserpool",
             removal_policy=RemovalPolicy.DESTROY,
             self_sign_up_enabled=False,
             enable_sms_role=False,
@@ -222,7 +222,7 @@ class CdkStack(Stack):
         )
 
         # Add Cognito User Pool Client
-        user_pool_client = user_pool.add_client("VirtualBankingAssistantUserpoolClient",
+        user_pool_client = user_pool.add_client("VirtualCloudOperationsAssistantUserpoolClient",
             auth_flows=cognito.AuthFlow(
                 admin_user_password=False,
                 custom=False,
@@ -235,7 +235,7 @@ class CdkStack(Stack):
         )
 
         # Create Cognito Identity Pool
-        identity_pool = cognito.CfnIdentityPool(self, "VirtualBankingAssistantIdentityPool",
+        identity_pool = cognito.CfnIdentityPool(self, "VirtualCloudOperationsAssistantIdentityPool",
             allow_unauthenticated_identities=False,
             allow_classic_flow=False,
             cognito_identity_providers=[cognito.CfnIdentityPool.CognitoIdentityProviderProperty(
@@ -245,7 +245,7 @@ class CdkStack(Stack):
         )
 
         # Create IAM role for authenticated users
-        authenticated_role = iam.Role(self, "VirtualBankingAssistantAuthenticatedRole",
+        authenticated_role = iam.Role(self, "VirtualCloudOperationsAssistantAuthenticatedRole",
             assumed_by=iam.FederatedPrincipal(
                 'cognito-identity.amazonaws.com',
                 {
@@ -261,7 +261,7 @@ class CdkStack(Stack):
         )
 
         # Attach roles to identity pool
-        cognito.CfnIdentityPoolRoleAttachment(self, "VirtualBankingAssistantRoleAttachment",
+        cognito.CfnIdentityPoolRoleAttachment(self, "VirtualCloudOperationsAssistantRoleAttachment",
             identity_pool_id=identity_pool.ref,
             roles={
                 'authenticated': authenticated_role.role_arn
@@ -269,7 +269,7 @@ class CdkStack(Stack):
         )
 
         # Create S3 bucket for frontend hosting
-        website_bucket = s3.Bucket(self, "VirtualBankingAssistantBucket",
+        website_bucket = s3.Bucket(self, "VirtualCloudOperationsAssistantBucket",
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
@@ -278,8 +278,8 @@ class CdkStack(Stack):
         )
 
         # Create CloudFront distribution
-        distribution = cloudfront.Distribution(self, "VirtualBankingAssistantDistribution",
-            comment="Virtual Banking Assistant Frontend",
+        distribution = cloudfront.Distribution(self, "VirtualCloudOperationsAssistantDistribution",
+            comment="Virtual Cloud Operations Assistant Frontend",
             default_behavior=cloudfront.BehaviorOptions(
                 origin=origins.S3BucketOrigin.with_origin_access_control(website_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -311,7 +311,7 @@ class CdkStack(Stack):
 
         # cdk-nag suppressions.
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantCluster/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantCluster/Resource',
             [
                 {
                     'id': 'AwsSolutions-ECS4',
@@ -321,7 +321,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantTaskRole/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantTaskRole/Resource',
             [
                 {
                     'id': 'AwsSolutions-IAM4',
@@ -331,7 +331,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantTaskRole/DefaultPolicy/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantTaskRole/DefaultPolicy/Resource',
             [
                 {
                     'id': 'AwsSolutions-IAM5',
@@ -341,7 +341,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantNLB/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantNLB/Resource',
             [
                 {
                     'id': 'AwsSolutions-ELB2',
@@ -351,7 +351,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantUserpool/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantUserpool/Resource',
             [
                 {
                     'id': 'AwsSolutions-COG3',
@@ -361,7 +361,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantBucket/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantBucket/Resource',
             [
                 {
                     'id': 'AwsSolutions-S1',
@@ -371,7 +371,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantDistribution/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantDistribution/Resource',
             [
                 {
                     'id': 'AwsSolutions-CFR3',
@@ -381,7 +381,7 @@ class CdkStack(Stack):
         )
 
         cdk_nag.NagSuppressions.add_resource_suppressions_by_path(self, 
-            f'/{self.stack_name}/VirtualBankingAssistantDistribution/Resource',
+            f'/{self.stack_name}/VirtualCloudOperationsAssistantDistribution/Resource',
             [
                 {
                     'id': 'AwsSolutions-CFR4',

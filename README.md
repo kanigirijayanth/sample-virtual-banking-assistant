@@ -1,5 +1,5 @@
 # Introduction
-This is a prototype demonstrating Amazon nova sonic for a banking usecase. It displays a virtual banking assistant avatar on the screen and you can have a free form conversation with it regarding banking services. It uses a React based frontend app running in a browser, which connects to an ECS cluster behind an NLB. The backend uses Pipecat to implement the voice bot by using Amazon Nova sonic behind the scenes. Please see below for the architecture details.
+This is a prototype demonstrating Amazon nova sonic for a cloud operations usecase. It displays a virtual cloud operations assistant avatar on the screen and you can have a free form conversation with it regarding AWS accounts and cloud services. It uses a React based frontend app running in a browser, which connects to an ECS cluster behind an NLB. The backend uses Pipecat to implement the voice bot by using Amazon Nova sonic behind the scenes. Please see below for the architecture details.
 
 # Architecture
 ![architecture](architecture.png)
