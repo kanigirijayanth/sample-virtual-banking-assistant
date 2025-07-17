@@ -7,7 +7,8 @@
 """AWS Nova Sonic LLM service implementation for Pipecat AI framework.
 
 This module provides a speech-to-speech LLM service using AWS Nova Sonic, which supports
-bidirectional audio streaming, text generation, and function calling capabilities.
+bidirectional audio streaming, text generation, and function calling capabilities for the
+Virtual Cloud Operations Assistant.
 """
 
 import asyncio

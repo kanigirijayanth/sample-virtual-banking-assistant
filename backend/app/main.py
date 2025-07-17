@@ -12,10 +12,10 @@
 # **********************************************************************************************************************/
 
 """
-FastAPI WebSocket Server for Virtual Banking Assistant
+FastAPI WebSocket Server for Virtual Cloud Operations Assistant
 
 This module implements a WebSocket server using FastAPI that handles real-time audio communication
-between clients and an AI banking assistant powered by AWS Nova Sonic. It processes audio streams,
+between clients and an AI cloud operations assistant powered by AWS Nova Sonic. It processes audio streams,
 manages transcription, and coordinates responses through a pipeline architecture.
 
 Key Components:
@@ -97,48 +97,29 @@ def update_dredentials():
     except Exception as e:
         print(f"Error refreshing credentials: {str(e)}", flush=True)
 
-async def get_balance_from_api(params: FunctionCallParams):
-    if params.arguments["username"] == 'suresh':
-        if params.arguments["secret_passcode"].lower() != 'nova sonic is awesome' or params.arguments["secret_passcode"].lower() != 'novasonic is awesome':
-            await params.result_callback(
-                {
-                    "balance": 5000 if params.arguments["account_type"] == 'savings' else 14000
-                }
-            )
+async def get_account_info(params: FunctionCallParams):
+    account_id = params.arguments.get("account_id", "")
+    if not account_id:
+        await params.result_callback({
+            "message": "Please provide an AWS account ID to look up."
+        })
+        return
+        
+    # This is a placeholder - the actual data will come from the knowledge base
+    await params.result_callback({
+        "message": f"Please use the knowledge base to look up information about account {account_id}."
+    })
 
-        else:
-            print('INCORRECT PASSCODE !')
-            await params.result_callback(
-                {
-                    "message": "Incorrect passcode."
-                }
-            )
-
-    else:
-        await params.result_callback(
-            {
-                "message": "No such user found."
-            }
-        )
-
-weather_function = FunctionSchema(
-    name="get_balance",
-    description="Get an account balance.",
+account_function = FunctionSchema(
+    name="get_account_info",
+    description="Get information about an AWS account.",
     properties={
-        "username": {
+        "account_id": {
             "type": "string",
-            "description": "The username for which the account balance is to be fetched.",
-        },
-        "secret_passcode": {
-            "type": "string",
-            "description": "A sentence to be used as the secret passcode to access the account details.",
-        },
-        "account_type": {
-            "type": "string",
-            "description": "The type of the account. Either savings or fixed deposit.",
+            "description": "The AWS account ID or name to look up information for.",
         }
     },
-    required=["username", "account_type"],
+    required=["account_id"],
 )
 
 # Create KB function schema
@@ -155,7 +136,7 @@ kb_function = FunctionSchema(
 )
 
 # Create tools schema
-tools = ToolsSchema(standard_tools=[weather_function, kb_function])
+tools = ToolsSchema(standard_tools=[account_function, kb_function])
 
 async def setup(websocket: WebSocket):
     """
@@ -207,7 +188,7 @@ async def setup(websocket: WebSocket):
     )
 
     # Register functions for function calls
-    llm.register_function("get_balance", get_balance_from_api)
+    llm.register_function("get_account_info", get_account_info)
     llm.register_function("get_kb_information", get_kb_information)
 
     # Set up conversation context
