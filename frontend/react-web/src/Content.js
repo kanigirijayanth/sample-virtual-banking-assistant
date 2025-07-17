@@ -254,7 +254,7 @@ function Content({ signOut, user }) {
                     pointerEvents: headerVisible ? 'auto' : 'none'
                 }}
             >
-                <Navbar.Brand className='px-2'>Virtual Banking Assistant</Navbar.Brand>
+                <Navbar.Brand className='px-2'>Virtual Cloud Operations Assistant</Navbar.Brand>
                 {user &&
                     <Nav className='d-flex flex-row p-2 nav-strip flex-grow-1 justify-content-end'>
                         <Nav.Link onClick={() => setHeaderVisible(false)}>

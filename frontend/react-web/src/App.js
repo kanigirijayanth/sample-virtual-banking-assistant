@@ -33,7 +33,7 @@ function App() {
             return (
                 <div className='d-flex flex-column justify-content-center text-center'>
                     <p className='h1'>
-                        Virtual Banking Assistant
+                        Virtual Cloud Operations Assistant
                     </p>
                     <p className='h5 mb-5 text-secondary'>
                         Powered by Amazon Nova Sonic
