@@ -46,7 +46,7 @@ export const awsConfig = {
  * @constant
  * @type {string}
  */
-export const apiKey = "Your-own-long-secret-text-to-access-the-api"
+export const apiKey = "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"
 
 /**
  * WebSocket endpoint URL
