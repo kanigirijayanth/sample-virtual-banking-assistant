@@ -46,7 +46,7 @@ export const awsConfig = {
  * @constant
  * @type {string}
  */
-export const apiKey = "YOUR_API_KEY_HERE" // Replace with your actual API key before running
+export const apiKey = "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" // Replace with your actual API key before running
 
 /**
  * WebSocket endpoint URL
