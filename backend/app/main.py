@@ -120,6 +120,22 @@ async def get_account_info(params: FunctionCallParams):
             "message": f"No information found for AWS account {account_id} in the knowledge base."
         })
 
+async def list_accounts(params: FunctionCallParams):
+    """List all AWS accounts from the knowledge base"""
+    # Use the knowledge base to get all accounts
+    kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+    query = "list all AWS account numbers and their owners"
+    kb_info = kb_enhancer.retrieve_from_kb(query)
+    
+    if kb_info:
+        await params.result_callback({
+            "accounts": kb_info
+        })
+    else:
+        await params.result_callback({
+            "message": "No account information found in the knowledge base."
+        })
+
 account_function = FunctionSchema(
     name="get_account_info",
     description="Get information about an AWS account.",
@@ -130,6 +146,13 @@ account_function = FunctionSchema(
         }
     },
     required=["account_id"],
+)
+
+list_accounts_function = FunctionSchema(
+    name="list_accounts",
+    description="List all AWS accounts from the knowledge base.",
+    properties={},
+    required=[],
 )
 
 # Create KB function schema
@@ -146,7 +169,7 @@ kb_function = FunctionSchema(
 )
 
 # Create tools schema
-tools = ToolsSchema(standard_tools=[account_function, kb_function])
+tools = ToolsSchema(standard_tools=[account_function, list_accounts_function, kb_function])
 
 async def setup(websocket: WebSocket):
     """
@@ -199,6 +222,7 @@ async def setup(websocket: WebSocket):
 
     # Register functions for function calls
     llm.register_function("get_account_info", get_account_info)
+    llm.register_function("list_accounts", list_accounts)
     llm.register_function("get_kb_information", get_kb_information)
 
     # Set up conversation context
