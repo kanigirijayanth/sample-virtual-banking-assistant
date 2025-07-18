@@ -20,6 +20,7 @@ def create_kb_retrieval_function(kb_id, region="us-east-1"):
     
     def retrieve_from_kb(query, max_results=3):
         try:
+            print(f"Querying knowledge base {kb_id} with: {query}")
             response = bedrock_agent_runtime.retrieve(
                 knowledgeBaseId=kb_id,
                 retrievalQuery={
@@ -32,6 +33,8 @@ def create_kb_retrieval_function(kb_id, region="us-east-1"):
                 }
             )
             
+            print(f"Knowledge base response received. Results: {len(response.get('retrievalResults', []))}")
+            
             results = []
             for result in response.get("retrievalResults", []):
                 content = result.get("content", {})
@@ -42,6 +45,8 @@ def create_kb_retrieval_function(kb_id, region="us-east-1"):
             return "\n\n".join(results) if results else ""
         except Exception as e:
             print(f"Error retrieving from knowledge base: {e}")
+            import traceback
+            traceback.print_exc()
             return ""
     
     return retrieve_from_kb
@@ -78,7 +83,7 @@ class KnowledgeBaseEnhancer:
             str: Enhanced system prompt
         """
         kb_instructions = """
-When answering questions about banking products, services, or policies, 
+When answering questions about AWS accounts, account owners, or cloud operations, 
 I will use information from the knowledge base when available.
 If I retrieve information from the knowledge base, I will cite the source.
 """

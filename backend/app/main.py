@@ -101,14 +101,24 @@ async def get_account_info(params: FunctionCallParams):
     account_id = params.arguments.get("account_id", "")
     if not account_id:
         await params.result_callback({
-            "message": "Please provide an AWS account ID to look up."
+            "message": "Please provide an AWS account ID or name to look up."
         })
         return
         
-    # This is a placeholder - the actual data will come from the knowledge base
-    await params.result_callback({
-        "message": f"Please use the knowledge base to look up information about account {account_id}."
-    })
+    # Use the knowledge base to get account information
+    kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+    query = f"information about AWS account {account_id}"
+    kb_info = kb_enhancer.retrieve_from_kb(query)
+    
+    if kb_info:
+        await params.result_callback({
+            "account_id": account_id,
+            "information": kb_info
+        })
+    else:
+        await params.result_callback({
+            "message": f"No information found for AWS account {account_id} in the knowledge base."
+        })
 
 account_function = FunctionSchema(
     name="get_account_info",

@@ -106,9 +106,15 @@ class CdkStack(Stack):
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=[
-                    "bedrock:InvokeModel"
+                    "bedrock:InvokeModel",
+                    "bedrock-agent-runtime:Retrieve",
+                    "bedrock-agent:RetrieveAndGenerate"
                 ],
-                resources=["arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-sonic-v1:0"]
+                resources=[
+                    "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-sonic-v1:0",
+                    f"arn:aws:bedrock:us-east-1:{self.account}:knowledge-base/40KPMEUSQC",
+                    "*"
+                ]
             )
         )
 
