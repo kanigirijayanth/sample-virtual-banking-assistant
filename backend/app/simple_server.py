@@ -147,6 +147,40 @@ async def get_total_cost():
     total_cost = sum(float(account['Total Cost in Indian Rupees']) for account in accounts if account['Total Cost in Indian Rupees'])
     return {"total_cost": total_cost, "currency": "Indian Rupees"}
 
+# Get account provisioning date
+@app.get("/accounts/provisioning-date/{account_id}")
+async def get_account_provisioning_date(account_id: str):
+    accounts = read_csv_file()
+    
+    # Find account by ID or name
+    for account in accounts:
+        if account['AWS Account Number'] == account_id or account['AWS account Name'] == account_id:
+            return {
+                "account_id": account_id,
+                "account_name": account['AWS account Name'],
+                "provisioning_date": account['Account Provisioning Date']
+            }
+    
+    raise HTTPException(status_code=404, detail=f"Account {account_id} not found")
+
+# Get accounts by year
+@app.get("/accounts/year/{year}")
+async def get_accounts_by_year(year: str):
+    accounts = read_csv_file()
+    filtered_accounts = [
+        account for account in accounts 
+        if year in account['Account Provisioning Date']
+    ]
+    
+    if not filtered_accounts:
+        raise HTTPException(status_code=404, detail=f"No accounts found provisioned in year {year}")
+    
+    # Add digit-by-digit reading
+    for account in filtered_accounts:
+        account['account_number_reading'] = read_digit_by_digit(account['AWS Account Number'])
+    
+    return {"year": year, "accounts": filtered_accounts, "count": len(filtered_accounts)}
+
 # WebSocket endpoint for real-time communication
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -250,6 +284,38 @@ def process_query(query: str):
             "type": "cost_info",
             "total_cost": total_cost,
             "currency": "Indian Rupees"
+        }
+    
+    # Check for provisioning date queries
+    if "provisioning date" in query or "provision date" in query:
+        if account_matches:
+            account_id = account_matches[0]
+            for account in accounts:
+                if account['AWS Account Number'] == account_id or account['AWS account Name'] == account_id:
+                    return {
+                        "type": "provisioning_date_info",
+                        "account_id": account_id,
+                        "account_name": account['AWS account Name'],
+                        "provisioning_date": account['Account Provisioning Date']
+                    }
+    
+    # Check for accounts by year queries
+    year_pattern = r'\b(20\d{2})\b'
+    year_matches = re.findall(year_pattern, query)
+    
+    if year_matches and ("year" in query or "provisioned" in query):
+        year = year_matches[0]
+        filtered_accounts = [
+            account for account in accounts 
+            if year in account['Account Provisioning Date']
+        ]
+        for account in filtered_accounts:
+            account['account_number_reading'] = read_digit_by_digit(account['AWS Account Number'])
+        return {
+            "type": "year_info",
+            "year": year,
+            "accounts": filtered_accounts,
+            "count": len(filtered_accounts)
         }
     
     # Default: return all accounts

@@ -98,7 +98,7 @@ def update_dredentials():
         print(f"Error refreshing credentials: {str(e)}", flush=True)
 
 # Import account functions
-from account_functions import get_account_info, list_accounts, get_accounts_by_classification, get_accounts_by_status, get_total_cost
+from account_functions import get_account_info, list_accounts, get_accounts_by_classification, get_accounts_by_status, get_total_cost, get_account_provisioning_date, get_accounts_by_year
 
 # Create function schemas
 account_function = FunctionSchema(
@@ -151,13 +151,39 @@ cost_function = FunctionSchema(
     required=[],
 )
 
+provisioning_date_function = FunctionSchema(
+    name="get_account_provisioning_date",
+    description="Get provisioning date for a specific AWS account.",
+    properties={
+        "account_id": {
+            "type": "string",
+            "description": "The AWS account ID or name to look up provisioning date for.",
+        }
+    },
+    required=["account_id"],
+)
+
+accounts_by_year_function = FunctionSchema(
+    name="get_accounts_by_year",
+    description="Get number of AWS accounts provisioned in a specific year.",
+    properties={
+        "year": {
+            "type": "string",
+            "description": "The year to filter accounts by (e.g., '2019').",
+        }
+    },
+    required=["year"],
+)
+
 # Create tools schema
 tools = ToolsSchema(standard_tools=[
     account_function, 
     list_accounts_function, 
     classification_function,
     status_function,
-    cost_function
+    cost_function,
+    provisioning_date_function,
+    accounts_by_year_function
 ])
 
 async def setup(websocket: WebSocket):
@@ -212,6 +238,8 @@ async def setup(websocket: WebSocket):
     llm.register_function("get_accounts_by_classification", get_accounts_by_classification)
     llm.register_function("get_accounts_by_status", get_accounts_by_status)
     llm.register_function("get_total_cost", get_total_cost)
+    llm.register_function("get_account_provisioning_date", get_account_provisioning_date)
+    llm.register_function("get_accounts_by_year", get_accounts_by_year)
 
     # Set up conversation context
     context = OpenAILLMContext(

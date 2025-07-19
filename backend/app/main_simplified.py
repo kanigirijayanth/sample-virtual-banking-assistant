@@ -21,7 +21,9 @@ from account_functions import (
     list_accounts, 
     get_accounts_by_classification, 
     get_accounts_by_status, 
-    get_total_cost
+    get_total_cost,
+    get_account_provisioning_date,
+    get_accounts_by_year
 )
 
 # API key for WebSocket authentication
@@ -112,6 +114,30 @@ async def process_query(query: str, connection_id: str):
     if "cost" in query or "total" in query:
         await get_total_cost(params)
         return
+    
+    # Check for provisioning date queries
+    if "provisioning date" in query or "provision date" in query:
+        # Extract account number
+        import re
+        account_pattern = r'\b\d{12}\b'
+        account_matches = re.findall(account_pattern, query)
+        
+        if account_matches:
+            params.arguments["account_id"] = account_matches[0]
+            await get_account_provisioning_date(params)
+            return
+    
+    # Check for accounts by year queries
+    if "year" in query and any(year in query for year in ["2019", "2020", "2021", "2022", "2023", "2024", "2025"]):
+        # Extract year
+        import re
+        year_pattern = r'\b(20\d{2})\b'
+        year_matches = re.findall(year_pattern, query)
+        
+        if year_matches:
+            params.arguments["year"] = year_matches[0]
+            await get_accounts_by_year(params)
+            return
     
     # Default: list all accounts
     await list_accounts(params)

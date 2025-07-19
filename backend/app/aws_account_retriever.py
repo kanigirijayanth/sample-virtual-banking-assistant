@@ -4,6 +4,7 @@ import json
 import re
 import os
 import traceback
+import datetime
 from typing import Dict, List, Any, Optional, Union
 
 class AWSAccountRetriever:
@@ -296,6 +297,68 @@ class AWSAccountRetriever:
                 info += f"... and {len(accounts) - 10} more accounts."
             
             return info
+            
+    def get_account_provisioning_date(self, account_id: str) -> str:
+        """
+        Get the provisioning date for a specific AWS account.
+        
+        Args:
+            account_id (str): AWS account ID or name to look up
+            
+        Returns:
+            str: Formatted provisioning date information
+        """
+        accounts = self.read_csv_file()
+        
+        # Find account by ID or name
+        for account in accounts:
+            if account['AWS Account Number'] == account_id or account['AWS account Name'] == account_id:
+                # Format the response
+                info = f"AWS Account Provisioning Date:\n"
+                info += f"=======================\n\n"
+                info += f"Account Number: {account['AWS Account Number']}\n"
+                info += f"Account Name: {account['AWS account Name']}\n"
+                info += f"Provisioning Date: {account['Account Provisioning Date']}\n"
+                
+                return info
+        
+        return f"No information found for AWS account {account_id}."
+    
+    def get_accounts_by_year(self, year: str) -> str:
+        """
+        Get the number of AWS accounts provisioned in a specific year.
+        
+        Args:
+            year (str): Year to filter by (e.g., "2019")
+            
+        Returns:
+            str: Formatted account count information
+        """
+        accounts = self.read_csv_file()
+        
+        # Filter accounts by year in provisioning date
+        filtered_accounts = [
+            account for account in accounts 
+            if year in account['Account Provisioning Date']
+        ]
+        
+        if not filtered_accounts:
+            return f"No accounts were provisioned in the year {year}."
+        
+        # Format the response
+        info = f"AWS Accounts Provisioned in {year}:\n"
+        info += f"=======================\n\n"
+        info += f"Found {len(filtered_accounts)} accounts provisioned in {year}:\n\n"
+        
+        for account in filtered_accounts[:10]:  # Limit to first 10 accounts
+            info += f"Account Number: {account['AWS Account Number']}\n"
+            info += f"Account Name: {account['AWS account Name']}\n"
+            info += f"Provisioning Date: {account['Account Provisioning Date']}\n\n"
+        
+        if len(filtered_accounts) > 10:
+            info += f"... and {len(filtered_accounts) - 10} more accounts."
+        
+        return info
 
 # Example usage
 if __name__ == "__main__":
