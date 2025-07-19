@@ -9,8 +9,8 @@ from aws_account_retriever import AWSAccountRetriever
 
 # Initialize the account retriever with absolute path
 import os
-current_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.abspath(os.path.join(current_dir, "../AWS_AccountDetails.csv"))
+# Use the CSV file at the root directory as that's where we're copying it in the Dockerfile
+csv_path = "/AWS_AccountDetails.csv"
 print(f"Using CSV file at: {csv_path}")
 retriever = AWSAccountRetriever(csv_path)
 

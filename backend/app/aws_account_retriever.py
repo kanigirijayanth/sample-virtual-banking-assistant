@@ -11,7 +11,7 @@ class AWSAccountRetriever:
     Class to retrieve AWS account information from CSV file.
     """
     
-    def __init__(self, csv_file: str = "../AWS_AccountDetails.csv"):
+    def __init__(self, csv_file: str = "AWS_AccountDetails.csv"):
         """
         Initialize the AWS Account Retriever.
         
@@ -20,12 +20,14 @@ class AWSAccountRetriever:
         """
         # Convert to absolute path if it's a relative path
         import os
+        # Get the directory of the current file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
         if not os.path.isabs(csv_file):
-            # Get the directory of the current file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
             csv_file = os.path.abspath(os.path.join(current_dir, csv_file))
         
         self.csv_file = csv_file
+        print(f"Using CSV file at: {csv_file}")
         print(f"Initialized AWSAccountRetriever with CSV file: {csv_file}")
         
         # Verify the file exists
@@ -38,7 +40,13 @@ class AWSAccountRetriever:
                 self.csv_file = alternative_path
                 print(f"Found CSV file at alternative location: {alternative_path}")
             else:
-                print(f"Could not find CSV file in parent directory either: {alternative_path}")
+                # Try to find the file in the current directory
+                current_dir_path = os.path.join(current_dir, "AWS_AccountDetails.csv")
+                if os.path.exists(current_dir_path):
+                    self.csv_file = current_dir_path
+                    print(f"Found CSV file in current directory: {current_dir_path}")
+                else:
+                    print(f"Could not find CSV file in parent directory or current directory")
     
     def read_csv_file(self):
         """Read the CSV file and return a list of account dictionaries"""
@@ -110,7 +118,9 @@ class AWSAccountRetriever:
                 info += f"Account Name: {account['AWS account Name']}\n"
                 info += f"Provisioning Date: {account['Account Provisioning Date']}\n"
                 info += f"Status: {account['Active / Suspended']}\n"
-                info += f"Classification: {account['Classification']}\n"
+                # Handle the space in the Classification field name
+                classification_key = ' Classification' if ' Classification' in account else 'Classification'
+                info += f"Classification: {account.get(classification_key, 'N/A')}\n"
                 info += f"Management Type: {account['Management Type']}\n"
                 info += f"Total Cost: {account['Total Cost in Indian Rupees']} Indian Rupees"
                 
@@ -130,10 +140,13 @@ class AWSAccountRetriever:
         """
         accounts = self.read_csv_file()
         
+        # Handle the space in the Classification field name
+        classification_key = ' Classification' if ' Classification' in accounts[0] else 'Classification'
+        
         # Filter accounts by classification
         filtered_accounts = [
             account for account in accounts 
-            if account['Classification'] and account['Classification'].lower() == classification.lower()
+            if account.get(classification_key) and account.get(classification_key).lower() == classification.lower()
         ]
         
         if not filtered_accounts:
@@ -183,7 +196,9 @@ class AWSAccountRetriever:
         for account in filtered_accounts[:10]:  # Limit to first 10 accounts
             info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
             info += f"Account Name: {account['AWS account Name']}\n"
-            info += f"Classification: {account['Classification']}\n\n"
+            # Handle the space in the Classification field name
+            classification_key = ' Classification' if ' Classification' in account else 'Classification'
+            info += f"Classification: {account.get(classification_key, 'N/A')}\n\n"
         
         if len(filtered_accounts) > 10:
             info += f"... and {len(filtered_accounts) - 10} more accounts."
@@ -219,7 +234,9 @@ class AWSAccountRetriever:
         for account in filtered_accounts[:10]:  # Limit to first 10 accounts
             info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
             info += f"Account Name: {account['AWS account Name']}\n"
-            info += f"Classification: {account['Classification']}\n\n"
+            # Handle the space in the Classification field name
+            classification_key = ' Classification' if ' Classification' in account else 'Classification'
+            info += f"Classification: {account.get(classification_key, 'N/A')}\n\n"
         
         if len(filtered_accounts) > 10:
             info += f"... and {len(filtered_accounts) - 10} more accounts."
@@ -271,7 +288,9 @@ class AWSAccountRetriever:
                 info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
                 info += f"Account Name: {account['AWS account Name']}\n"
                 info += f"Status: {account['Active / Suspended']}\n"
-                info += f"Classification: {account['Classification']}\n\n"
+                # Handle the space in the Classification field name
+                classification_key = ' Classification' if ' Classification' in account else 'Classification'
+                info += f"Classification: {account.get(classification_key, 'N/A')}\n\n"
             
             if len(accounts) > 10:
                 info += f"... and {len(accounts) - 10} more accounts."
