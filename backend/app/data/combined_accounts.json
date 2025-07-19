@@ -1,0 +1,154 @@
+{
+  "100942612345": {
+    "descriptions": [
+      {
+        "Sl No": "1",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "100942612345",
+        "AWS account Name(AWS Console)": "Infosys Central Production",
+        "AWS account Name(Cloud Health)": "Master - Central - awsproject - PrdOrg",
+        "Account Owner Email ID": "Pesion1@example.com",
+        "Account Provisioning Date": "Jan 31 2019",
+        "751362898289Active / Suspended /": "ACTIVE",
+        "Class": "Class-3",
+        "Self-Service\u00a0/ Managed": "Managed Services",
+        "Grouping": "Common/Shared-Prod"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx"
+    ]
+  },
+  "211125759895": {
+    "descriptions": [
+      {
+        "Sl No": "84",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "72207212428",
+        "AWS account Name(AWS Console)": "TestProvisioningAccountBugFixIAMPasswordPolicyv2",
+        "AWS account Name(Cloud Health)": "211125759895",
+        "Account Owner Email ID": "Pesion3@example.com",
+        "Account Provisioning Date": "Apr 25 2024",
+        "751362898289Active / Suspended /": "SUSPENDED",
+        "Self-Service\u00a0/ Managed": "Self Service",
+        "Found in column": "AWS account Name(Cloud Health)"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx (found in cell)"
+    ]
+  },
+  "905418167643": {
+    "descriptions": [
+      {
+        "Sl No": "85",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "72207212429",
+        "AWS account Name(AWS Console)": "awsproject_testaccount0207",
+        "AWS account Name(Cloud Health)": "905418167643",
+        "Account Owner Email ID": "Pesion3@example.com",
+        "Account Provisioning Date": "Jul 02 2024",
+        "751362898289Active / Suspended /": "SUSPENDED",
+        "Class": "0",
+        "Self-Service\u00a0/ Managed": "Self Service",
+        "Found in column": "AWS account Name(Cloud Health)"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx (found in cell)"
+    ]
+  },
+  "767397866601": {
+    "descriptions": [
+      {
+        "Sl No": "87",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "72207212431",
+        "AWS account Name(AWS Console)": "awsproject_testingaccount2506",
+        "AWS account Name(Cloud Health)": "767397866601",
+        "Account Owner Email ID": "Pesion4@example.com",
+        "Account Provisioning Date": "Jun 26 2024",
+        "751362898289Active / Suspended /": "SUSPENDED",
+        "Class": "0",
+        "Self-Service\u00a0/ Managed": "Self Service",
+        "Found in column": "AWS account Name(Cloud Health)"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx (found in cell)"
+    ]
+  },
+  "992382667179": {
+    "descriptions": [
+      {
+        "Sl No": "88",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "72207212432",
+        "AWS account Name(AWS Console)": "TestProvisioningAccount-BugFixIAMPasswordPolicy",
+        "AWS account Name(Cloud Health)": "992382667179",
+        "Account Owner Email ID": "Pesion4@example.com",
+        "Account Provisioning Date": "Apr 24 2024",
+        "751362898289Active / Suspended /": "SUSPENDED",
+        "Class": "0",
+        "Self-Service\u00a0/ Managed": "Self Service",
+        "Found in column": "AWS account Name(Cloud Health)"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx (found in cell)"
+    ]
+  },
+  "975050111382": {
+    "descriptions": [
+      {
+        "Sl No": "89",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "72207212433",
+        "AWS account Name(AWS Console)": "TestProvisioningAccountBugFixIAMPasswordPolicy",
+        "AWS account Name(Cloud Health)": "975050111382",
+        "Account Owner Email ID": "Pesion4@example.com",
+        "Account Provisioning Date": "Apr 24 2024",
+        "751362898289Active / Suspended /": "SUSPENDED",
+        "Self-Service\u00a0/ Managed": "Self Service",
+        "Found in column": "AWS account Name(Cloud Health)"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx (found in cell)"
+    ]
+  },
+  "211125630751": {
+    "descriptions": [
+      {
+        "Sl No": "92",
+        "Unnamed: 1": "Master - Central",
+        "AWS Account Number": "72207212436",
+        "AWS account Name(AWS Console)": "TestProvisioningAccount-BugFixIAMPasswordPolicyv1",
+        "AWS account Name(Cloud Health)": "211125630751",
+        "Account Owner Email ID": "Pesion4@example.com",
+        "Account Provisioning Date": "Apr 24 2024",
+        "751362898289Active / Suspended /": "SUSPENDED",
+        "Class": "0",
+        "Self-Service\u00a0/ Managed": "Self Service",
+        "Found in column": "AWS account Name(Cloud Health)"
+      }
+    ],
+    "sources": [
+      "awsworkshop_accountdetails.xlsx (found in cell)"
+    ]
+  },
+  "123456789012": {
+    "descriptions": [
+      [
+        "AWS Account Overview",
+        "Account Name: Sample AWS Account",
+        "Account ID: 1234-5678-9012",
+        "Region: us-west-2",
+        "Owner: John Doe"
+      ]
+    ],
+    "sources": [
+      "aws_account_summary.pdf (page 1)"
+    ]
+  }
+}

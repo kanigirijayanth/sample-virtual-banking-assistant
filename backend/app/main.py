@@ -105,36 +105,67 @@ async def get_account_info(params: FunctionCallParams):
         })
         return
         
-    # Use the knowledge base to get account information
-    kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
-    query = f"information about AWS account {account_id}"
-    kb_info = kb_enhancer.retrieve_from_kb(query)
+    # Use our enhanced account retriever to get comprehensive account information
+    from aws_account_retriever import AWSAccountRetriever
     
-    if kb_info:
+    try:
+        retriever = AWSAccountRetriever(kb_id="40KPMEUSQC")
+        account_info = retriever.get_formatted_account_info(account_id)
+        
         await params.result_callback({
             "account_id": account_id,
-            "information": kb_info
+            "information": account_info
         })
-    else:
-        await params.result_callback({
-            "message": f"No information found for AWS account {account_id} in the knowledge base."
-        })
+    except Exception as e:
+        print(f"Error retrieving account information: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback to the knowledge base if there's an error
+        kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+        query = f"information about AWS account {account_id}"
+        kb_info = kb_enhancer.retrieve_from_kb(query)
+        
+        if kb_info:
+            await params.result_callback({
+                "account_id": account_id,
+                "information": kb_info
+            })
+        else:
+            await params.result_callback({
+                "message": f"No information found for AWS account {account_id} in the knowledge base."
+            })
 
 async def list_accounts(params: FunctionCallParams):
-    """List all AWS accounts from the knowledge base"""
-    # Use the knowledge base to get all accounts
-    kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
-    query = "list all AWS account numbers and their owners"
-    kb_info = kb_enhancer.retrieve_from_kb(query)
+    """List all AWS accounts from the knowledge base and S3 data sources"""
+    # Use our enhanced account retriever to get comprehensive account information
+    from aws_account_retriever import AWSAccountRetriever
     
-    if kb_info:
+    try:
+        retriever = AWSAccountRetriever(kb_id="40KPMEUSQC")
+        account_info = retriever.get_formatted_account_info()
+        
         await params.result_callback({
-            "accounts": kb_info
+            "accounts": account_info
         })
-    else:
-        await params.result_callback({
-            "message": "No account information found in the knowledge base."
-        })
+    except Exception as e:
+        print(f"Error retrieving account information: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback to the knowledge base if there's an error
+        kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+        query = "list all AWS account numbers and their owners"
+        kb_info = kb_enhancer.retrieve_from_kb(query)
+        
+        if kb_info:
+            await params.result_callback({
+                "accounts": kb_info
+            })
+        else:
+            await params.result_callback({
+                "message": "No account information found in the knowledge base."
+            })
 
 account_function = FunctionSchema(
     name="get_account_info",
