@@ -18,22 +18,49 @@ class AWSAccountRetriever:
         Args:
             csv_file (str): Path to the CSV file with account details
         """
+        # Convert to absolute path if it's a relative path
+        import os
+        if not os.path.isabs(csv_file):
+            # Get the directory of the current file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            csv_file = os.path.abspath(os.path.join(current_dir, csv_file))
+        
         self.csv_file = csv_file
         print(f"Initialized AWSAccountRetriever with CSV file: {csv_file}")
+        
+        # Verify the file exists
+        if not os.path.exists(csv_file):
+            print(f"WARNING: CSV file not found: {csv_file}")
+            # Try to find the file in parent directories
+            parent_dir = os.path.dirname(current_dir)
+            alternative_path = os.path.join(parent_dir, "AWS_AccountDetails.csv")
+            if os.path.exists(alternative_path):
+                self.csv_file = alternative_path
+                print(f"Found CSV file at alternative location: {alternative_path}")
+            else:
+                print(f"Could not find CSV file in parent directory either: {alternative_path}")
     
     def read_csv_file(self):
         """Read the CSV file and return a list of account dictionaries"""
         accounts = []
         try:
+            # Check if file exists
+            import os
+            if not os.path.exists(self.csv_file):
+                print(f"CSV file does not exist: {self.csv_file}")
+                return []
+                
             with open(self.csv_file, 'r', encoding='utf-8-sig') as file:
                 csv_reader = csv.DictReader(file)
                 for row in csv_reader:
                     # Skip empty rows
-                    if not row['AWS Account Number']:
+                    if not row.get('AWS Account Number'):
                         continue
                     # Add digit-by-digit reading
                     row['account_number_reading'] = self.read_digit_by_digit(row['AWS Account Number'])
                     accounts.append(row)
+            
+            print(f"Successfully read {len(accounts)} accounts from CSV file")
             return accounts
         except Exception as e:
             print(f"Error reading CSV file: {e}")

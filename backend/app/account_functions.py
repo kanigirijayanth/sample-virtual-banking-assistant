@@ -7,8 +7,12 @@ that can be integrated with the virtual assistant.
 
 from aws_account_retriever import AWSAccountRetriever
 
-# Initialize the account retriever
-retriever = AWSAccountRetriever("../AWS_AccountDetails.csv")
+# Initialize the account retriever with absolute path
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.abspath(os.path.join(current_dir, "../AWS_AccountDetails.csv"))
+print(f"Using CSV file at: {csv_path}")
+retriever = AWSAccountRetriever(csv_path)
 
 async def get_account_info(params):
     """
