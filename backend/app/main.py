@@ -105,11 +105,11 @@ async def get_account_info(params: FunctionCallParams):
         })
         return
         
-    # Use our enhanced account retriever to get comprehensive account information
+    # Use our account retriever with Nova Lite to get account information
     from aws_account_retriever import AWSAccountRetriever
     
     try:
-        retriever = AWSAccountRetriever(kb_id="40KPMEUSQC")
+        retriever = AWSAccountRetriever(kb_id="KCZTEHHZFA")
         account_info = retriever.get_formatted_account_info(account_id)
         
         await params.result_callback({
@@ -121,28 +121,17 @@ async def get_account_info(params: FunctionCallParams):
         import traceback
         traceback.print_exc()
         
-        # Fallback to the knowledge base if there's an error
-        kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
-        query = f"information about AWS account {account_id}"
-        kb_info = kb_enhancer.retrieve_from_kb(query)
-        
-        if kb_info:
-            await params.result_callback({
-                "account_id": account_id,
-                "information": kb_info
-            })
-        else:
-            await params.result_callback({
-                "message": f"No information found for AWS account {account_id} in the knowledge base."
-            })
+        await params.result_callback({
+            "message": f"Error retrieving account information: {str(e)}"
+        })
 
 async def list_accounts(params: FunctionCallParams):
-    """List all AWS accounts from the knowledge base and S3 data sources"""
-    # Use our enhanced account retriever to get comprehensive account information
+    """List all AWS accounts from the knowledge base"""
+    # Use our account retriever with Nova Lite
     from aws_account_retriever import AWSAccountRetriever
     
     try:
-        retriever = AWSAccountRetriever(kb_id="40KPMEUSQC")
+        retriever = AWSAccountRetriever(kb_id="KCZTEHHZFA")
         account_info = retriever.get_formatted_account_info()
         
         await params.result_callback({
@@ -154,7 +143,7 @@ async def list_accounts(params: FunctionCallParams):
         traceback.print_exc()
         
         # Fallback to the knowledge base if there's an error
-        kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+        kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
         query = "list all AWS account numbers and their owners"
         kb_info = kb_enhancer.retrieve_from_kb(query)
         
@@ -218,7 +207,7 @@ async def setup(websocket: WebSocket):
     update_dredentials()
     
     # Initialize knowledge base enhancer
-    kb_enhancer = KnowledgeBaseEnhancer(kb_id="40KPMEUSQC")
+    kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
     
     # Enhance system instruction with KB capabilities
     base_instruction = Path('prompt.txt').read_text()

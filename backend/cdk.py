@@ -35,16 +35,16 @@ Environment Variables:
 
 import os
 
-import aws_cdk as cdk
+import aws_cdk
 from cdk_nag import AwsSolutionsChecks
 
 from cdk_stack import CdkStack
 
 # Initialize the CDK application
-app = cdk.App()
+app = aws_cdk.App()
 
 # Add the cdk-nag AwsSolutions Pack with extra verbose logging enabled
-cdk.Aspects.of(app).add(AwsSolutionsChecks(verbose=True))
+aws_cdk.Aspects.of(app).add(AwsSolutionsChecks(verbose=True))
 
 # Create the Virtual Cloud Operations Assistant stack
 # The stack can be environment-agnostic (deploy anywhere) or environment-specific
@@ -54,7 +54,7 @@ CdkStack(app, "VirtualCloudOperationsAssistantCdkStack",
     # but a single synthesized template can be deployed anywhere.
 
     # For environment-specific deployment, use the current CLI configuration
-    env=cdk.Environment(
+    env=aws_cdk.Environment(
         account=os.getenv('CDK_DEFAULT_ACCOUNT'), 
         region=os.getenv('CDK_DEFAULT_REGION')
     ),
@@ -70,7 +70,7 @@ CdkStack(app, "VirtualCloudOperationsAssistantCdkStack",
 
 # Optional: Add AWS Solutions security checks
 # Uncomment to enable detailed security analysis during synthesis
-# cdk.Aspects.of(app).add(AwsSolutionsChecks(verbose=True))
+# aws_cdk.Aspects.of(app).add(AwsSolutionsChecks(verbose=True))
 
 # Synthesize the CloudFormation template
 app.synth()

@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import boto3
+import traceback
 from pathlib import Path
 
 # Define the KB retrieval function directly
@@ -45,7 +46,6 @@ def create_kb_retrieval_function(kb_id, region="us-east-1"):
             return "\n\n".join(results) if results else ""
         except Exception as e:
             print(f"Error retrieving from knowledge base: {e}")
-            import traceback
             traceback.print_exc()
             return ""
     
@@ -66,7 +66,7 @@ class KnowledgeBaseEnhancer:
             max_results (int): Maximum number of results to retrieve from the knowledge base
         """
         # Use specific knowledge base ID
-        self.kb_id = kb_id or os.environ.get("BEDROCK_KB_ID") or "40KPMEUSQC"
+        self.kb_id = kb_id or os.environ.get("BEDROCK_KB_ID") or "KCZTEHHZFA"
         # Create the retrieval function
         self.retrieve_from_kb = create_kb_retrieval_function(self.kb_id, region)
         
@@ -120,27 +120,6 @@ Please use the above knowledge base information if relevant to answer my questio
 """
         return enhanced_query
 
-# Example of how to use this in the main application:
-"""
-# In main.py:
-
-from kb_integration import KnowledgeBaseEnhancer
-
-# Initialize the knowledge base enhancer
-kb_enhancer = KnowledgeBaseEnhancer(os.environ.get("BEDROCK_KB_ID"))
-
-# When setting up the system prompt:
-system_instruction = kb_enhancer.enhance_system_prompt(Path('prompt.txt').read_text())
-
-# When processing user input (in a hypothetical process_user_input function):
-def process_user_input(user_input, context):
-    # Enhance the user input with knowledge base information
-    enhanced_input = kb_enhancer.enhance_user_query(user_input, context)
-    
-    # Use the enhanced input for the LLM
-    # ...
-"""
-
 # Function that can be used with the existing function call mechanism
 async def get_kb_information(params):
     """
@@ -157,7 +136,7 @@ async def get_kb_information(params):
         return
     
     # Initialize the knowledge base enhancer
-    kb_enhancer = KnowledgeBaseEnhancer()
+    kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
     
     if not kb_enhancer.retrieve_from_kb:
         await params.result_callback({"information": "Knowledge base not configured."})

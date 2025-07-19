@@ -108,11 +108,14 @@ class CdkStack(Stack):
                 actions=[
                     "bedrock:InvokeModel",
                     "bedrock-agent-runtime:Retrieve",
-                    "bedrock-agent:RetrieveAndGenerate"
+                    "bedrock-agent:RetrieveAndGenerate",
+                    "bedrock:Retrieve",
+                    "bedrock-runtime:InvokeModel"
                 ],
                 resources=[
                     "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-sonic-v1:0",
-                    f"arn:aws:bedrock:us-east-1:{self.account}:knowledge-base/40KPMEUSQC",
+                    "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-lite-v1:0",
+                    f"arn:aws:bedrock:us-east-1:{self.account}:knowledge-base/KCZTEHHZFA",
                     "*"
                 ]
             )
