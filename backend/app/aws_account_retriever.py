@@ -1,128 +1,65 @@
 #!/usr/bin/env python3
-import boto3
+import csv
 import json
 import re
 import os
 import traceback
-from typing import Dict, List, Any, Optional, Set, Union
+from typing import Dict, List, Any, Optional, Union
 
 class AWSAccountRetriever:
     """
-    Class to retrieve AWS account information using Bedrock knowledge base and Nova Lite.
+    Class to retrieve AWS account information from CSV file.
     """
     
-    def __init__(self, kb_id: str = "KCZTEHHZFA", region: str = "us-east-1"):
+    def __init__(self, csv_file: str = "../AWS_AccountDetails.csv"):
         """
         Initialize the AWS Account Retriever.
         
         Args:
-            kb_id (str): Knowledge base ID
-            region (str): AWS region
+            csv_file (str): Path to the CSV file with account details
         """
-        self.kb_id = kb_id
-        self.region = region
-        self.bedrock_client = None
-        self.bedrock_runtime_client = None
-        
-        try:
-            self.bedrock_client = boto3.client("bedrock-agent-runtime", region_name=region)
-            self.bedrock_runtime_client = boto3.client("bedrock-runtime", region_name=region)
-            print(f"Initialized AWSAccountRetriever with KB ID: {kb_id}")
-        except Exception as e:
-            print(f"Error initializing AWS clients: {e}")
-            traceback.print_exc()
+        self.csv_file = csv_file
+        print(f"Initialized AWSAccountRetriever with CSV file: {csv_file}")
     
-    def query_knowledge_base(self, query: str, max_results: int = 5) -> str:
-        """
-        Query the knowledge base for information.
-        
-        Args:
-            query (str): Query to search for
-            max_results (int): Maximum number of results to return
-            
-        Returns:
-            str: Formatted results from the knowledge base
-        """
-        if not self.bedrock_client:
-            return "Error: Bedrock client not initialized."
-        
+    def read_csv_file(self):
+        """Read the CSV file and return a list of account dictionaries"""
+        accounts = []
         try:
-            print(f"Querying knowledge base {self.kb_id} with: {query}")
-            response = self.bedrock_client.retrieve(
-                knowledgeBaseId=self.kb_id,
-                retrievalQuery={
-                    "text": query
-                },
-                retrievalConfiguration={
-                    "vectorSearchConfiguration": {
-                        "numberOfResults": max_results
-                    }
-                }
-            )
-            
-            results = []
-            for result in response.get("retrievalResults", []):
-                content = result.get("content", {})
-                text = content.get("text", "")
-                source = result.get("location", {}).get("s3Location", {}).get("uri", "Unknown source")
-                results.append(f"Source: {source}\n{text}")
-            
-            return "\n\n".join(results) if results else "No results found in the knowledge base."
-            
+            with open(self.csv_file, 'r', encoding='utf-8-sig') as file:
+                csv_reader = csv.DictReader(file)
+                for row in csv_reader:
+                    # Skip empty rows
+                    if not row['AWS Account Number']:
+                        continue
+                    # Add digit-by-digit reading
+                    row['account_number_reading'] = self.read_digit_by_digit(row['AWS Account Number'])
+                    accounts.append(row)
+            return accounts
         except Exception as e:
-            print(f"Error querying knowledge base: {e}")
+            print(f"Error reading CSV file: {e}")
             traceback.print_exc()
-            return f"Error querying knowledge base: {str(e)}"
+            return []
     
-    def query_nova_lite(self, query: str, context: str) -> str:
-        """
-        Query Nova Lite (Claude 3 Sonnet) with context from the knowledge base.
+    def read_digit_by_digit(self, number):
+        """Read a number digit by digit"""
+        digit_names = {
+            '0': 'zero',
+            '1': 'one',
+            '2': 'two',
+            '3': 'three',
+            '4': 'four',
+            '5': 'five',
+            '6': 'six',
+            '7': 'seven',
+            '8': 'eight',
+            '9': 'nine'
+        }
         
-        Args:
-            query (str): User query
-            context (str): Context from the knowledge base
-            
-        Returns:
-            str: Response from Nova Lite
-        """
-        if not self.bedrock_runtime_client:
-            return "Error: Bedrock runtime client not initialized."
-        
-        try:
-            print(f"Querying Nova Lite with: {query}")
-            
-            # Prepare the prompt for Nova Lite
-            prompt = f"""You are a helpful assistant that provides information about AWS accounts.
-            
-            Context from knowledge base:
-            {context}
-            
-            User query: {query}
-            
-            Please provide a helpful response based on the context. If the information is not in the context, say so.
-            """
-            
-            # Invoke Nova Lite
-            response = self.bedrock_runtime_client.invoke_model(
-                modelId="amazon.nova-lite-v1:0",
-                contentType="application/json",
-                accept="application/json",
-                body=json.dumps({
-                    "messages": [
-                        {"role": "user", "content": [{"text": prompt}]}
-                    ]
-                })
-            )
-            
-            response_body = json.loads(response["body"].read().decode())
-            return response_body["output"]["message"]["content"][0]["text"]
-            
-        except Exception as e:
-            print(f"Error querying Nova Lite: {e}")
-            traceback.print_exc()
-            
-            # Fall back to just returning the context
-            return f"I found the following information:\n\n{context}"
+        return ' '.join(digit_names[digit] for digit in str(number))
+    
+    def get_all_accounts(self):
+        """Get all AWS accounts"""
+        return self.read_csv_file()
     
     def get_account_info(self, account_id: str) -> str:
         """
@@ -134,39 +71,152 @@ class AWSAccountRetriever:
         Returns:
             str: Formatted account information
         """
-        # Query the knowledge base for account information
-        query = f"information about AWS account {account_id}"
-        kb_results = self.query_knowledge_base(query)
+        accounts = self.read_csv_file()
         
-        # Try to use Nova Lite to generate a response
-        try:
-            return self.query_nova_lite(query, kb_results)
-        except Exception as e:
-            print(f"Error using Nova Lite: {e}")
-            # Fall back to just returning the knowledge base results
-            return self.format_account_info(kb_results)
+        # Find account by ID or name
+        for account in accounts:
+            if account['AWS Account Number'] == account_id or account['AWS account Name'] == account_id:
+                # Format the response
+                info = f"AWS Account Information:\n"
+                info += f"=======================\n\n"
+                info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
+                info += f"Account Name: {account['AWS account Name']}\n"
+                info += f"Provisioning Date: {account['Account Provisioning Date']}\n"
+                info += f"Status: {account['Active / Suspended']}\n"
+                info += f"Classification: {account['Classification']}\n"
+                info += f"Management Type: {account['Management Type']}\n"
+                info += f"Total Cost: {account['Total Cost in Indian Rupees']} Indian Rupees"
+                
+                return info
+        
+        return f"No information found for AWS account {account_id}."
     
-    def format_account_info(self, kb_info: str) -> str:
+    def get_accounts_by_classification(self, classification: str) -> str:
         """
-        Format account information for display.
+        Get AWS accounts by classification.
         
         Args:
-            kb_info (str): Knowledge base information
+            classification (str): Classification to filter by
             
         Returns:
             str: Formatted account information
         """
-        if not kb_info or kb_info == "No results found in the knowledge base.":
-            return "No account information found."
+        accounts = self.read_csv_file()
         
-        # Extract account information from the knowledge base results
-        formatted_info = "AWS Account Information:\n"
-        formatted_info += "=======================\n\n"
+        # Filter accounts by classification
+        filtered_accounts = [
+            account for account in accounts 
+            if account['Classification'] and account['Classification'].lower() == classification.lower()
+        ]
         
-        # Add the knowledge base information
-        formatted_info += kb_info
+        if not filtered_accounts:
+            return f"No accounts found with classification {classification}."
         
-        return formatted_info
+        # Format the response
+        info = f"AWS Accounts with Classification {classification}:\n"
+        info += f"=======================\n\n"
+        info += f"Found {len(filtered_accounts)} accounts:\n\n"
+        
+        for account in filtered_accounts[:10]:  # Limit to first 10 accounts
+            info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
+            info += f"Account Name: {account['AWS account Name']}\n"
+            info += f"Status: {account['Active / Suspended']}\n\n"
+        
+        if len(filtered_accounts) > 10:
+            info += f"... and {len(filtered_accounts) - 10} more accounts."
+        
+        return info
+    
+    def get_accounts_by_status(self, status: str) -> str:
+        """
+        Get AWS accounts by status.
+        
+        Args:
+            status (str): Status to filter by (ACTIVE or SUSPENDED)
+            
+        Returns:
+            str: Formatted account information
+        """
+        accounts = self.read_csv_file()
+        
+        # Filter accounts by status
+        filtered_accounts = [
+            account for account in accounts 
+            if account['Active / Suspended'] and account['Active / Suspended'].lower() == status.lower()
+        ]
+        
+        if not filtered_accounts:
+            return f"No accounts found with status {status}."
+        
+        # Format the response
+        info = f"AWS Accounts with Status {status}:\n"
+        info += f"=======================\n\n"
+        info += f"Found {len(filtered_accounts)} accounts:\n\n"
+        
+        for account in filtered_accounts[:10]:  # Limit to first 10 accounts
+            info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
+            info += f"Account Name: {account['AWS account Name']}\n"
+            info += f"Classification: {account['Classification']}\n\n"
+        
+        if len(filtered_accounts) > 10:
+            info += f"... and {len(filtered_accounts) - 10} more accounts."
+        
+        return info
+    
+    def get_accounts_by_management(self, management_type: str) -> str:
+        """
+        Get AWS accounts by management type.
+        
+        Args:
+            management_type (str): Management type to filter by
+            
+        Returns:
+            str: Formatted account information
+        """
+        accounts = self.read_csv_file()
+        
+        # Filter accounts by management type
+        filtered_accounts = [
+            account for account in accounts 
+            if account['Management Type'] and account['Management Type'].lower() == management_type.lower()
+        ]
+        
+        if not filtered_accounts:
+            return f"No accounts found with management type {management_type}."
+        
+        # Format the response
+        info = f"AWS Accounts with Management Type {management_type}:\n"
+        info += f"=======================\n\n"
+        info += f"Found {len(filtered_accounts)} accounts:\n\n"
+        
+        for account in filtered_accounts[:10]:  # Limit to first 10 accounts
+            info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
+            info += f"Account Name: {account['AWS account Name']}\n"
+            info += f"Classification: {account['Classification']}\n\n"
+        
+        if len(filtered_accounts) > 10:
+            info += f"... and {len(filtered_accounts) - 10} more accounts."
+        
+        return info
+    
+    def get_total_cost(self) -> str:
+        """
+        Get total cost of all AWS accounts.
+        
+        Returns:
+            str: Formatted cost information
+        """
+        accounts = self.read_csv_file()
+        
+        # Calculate total cost
+        total_cost = sum(float(account['Total Cost in Indian Rupees']) for account in accounts if account['Total Cost in Indian Rupees'])
+        
+        # Format the response
+        info = f"Total Cost of AWS Accounts:\n"
+        info += f"=======================\n\n"
+        info += f"The total cost of all AWS accounts is {total_cost} Indian Rupees."
+        
+        return info
     
     def get_formatted_account_info(self, account_id: Optional[str] = None) -> str:
         """
@@ -183,17 +233,23 @@ class AWSAccountRetriever:
             return self.get_account_info(account_id)
         else:
             # Get information about all accounts
-            query = "list all AWS account numbers and their owners"
-            kb_results = self.query_knowledge_base(query)
+            accounts = self.read_csv_file()
             
-            # Try to use Nova Lite to generate a response
-            try:
-                return self.query_nova_lite(query, kb_results)
-            except Exception as e:
-                print(f"Error using Nova Lite: {e}")
-                # Fall back to just returning the knowledge base results
-                return self.format_account_info(kb_results)
-
+            # Format the response
+            info = f"AWS Account Information:\n"
+            info += f"=======================\n\n"
+            info += f"Found {len(accounts)} AWS accounts:\n\n"
+            
+            for account in accounts[:10]:  # Limit to first 10 accounts
+                info += f"Account Number: {account['AWS Account Number']} (read as: {account['account_number_reading']})\n"
+                info += f"Account Name: {account['AWS account Name']}\n"
+                info += f"Status: {account['Active / Suspended']}\n"
+                info += f"Classification: {account['Classification']}\n\n"
+            
+            if len(accounts) > 10:
+                info += f"... and {len(accounts) - 10} more accounts."
+            
+            return info
 
 # Example usage
 if __name__ == "__main__":

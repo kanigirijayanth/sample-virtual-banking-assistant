@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Account Assistant Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+        .user {
+            background-color: #e6f7ff;
+            text-align: right;
+            margin-left: 20%;
+        }
+        .assistant {
+            background-color: #f0f0f0;
+            margin-right: 20%;
+        }
+        .input-container {
+            display: flex;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>AWS Account Assistant Test Client</h1>
+    
+    <div class="chat-container" id="chat-container"></div>
+    
+    <div class="input-container">
+        <input type="text" id="message-input" placeholder="Type your message here..." />
+        <button id="send-button">Send</button>
+    </div>
+    
+    <div class="status" id="status">Disconnected</div>
+    
+    <h2>Example Queries:</h2>
+    <ul>
+        <li><button class="query-button">List all AWS accounts</button></li>
+        <li><button class="query-button">Get information about account 100942612345</button></li>
+        <li><button class="query-button">Show me all Class-1 accounts</button></li>
+        <li><button class="query-button">What's the total cost of all accounts?</button></li>
+        <li><button class="query-button">Show me all active accounts</button></li>
+        <li><button class="query-button">List all suspended accounts</button></li>
+        <li><button class="query-button">Which accounts are managed services?</button></li>
+    </ul>
+    
+    <script>
+        // API key for WebSocket authentication
+        const API_KEY = "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";
+        
+        // WebSocket connection
+        let socket;
+        
+        // DOM elements
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const statusElement = document.getElementById('status');
+        const queryButtons = document.querySelectorAll('.query-button');
+        
+        // Connect to WebSocket
+        function connect() {
+            // Close existing connection if any
+            if (socket) {
+                socket.close();
+            }
+            
+            // Create new WebSocket connection
+            socket = new WebSocket(`ws://${window.location.hostname}:8000/ws`, API_KEY);
+            
+            // Connection opened
+            socket.addEventListener('open', (event) => {
+                statusElement.textContent = 'Connected';
+                statusElement.style.color = 'green';
+            });
+            
+            // Listen for messages
+            socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.event === 'text') {
+                    addMessage(data.data, data.speaker);
+                }
+            });
+            
+            // Connection closed
+            socket.addEventListener('close', (event) => {
+                statusElement.textContent = 'Disconnected';
+                statusElement.style.color = 'red';
+                
+                // Try to reconnect after 3 seconds
+                setTimeout(connect, 3000);
+            });
+            
+            // Connection error
+            socket.addEventListener('error', (event) => {
+                statusElement.textContent = 'Error: ' + event;
+                statusElement.style.color = 'red';
+            });
+        }
+        
+        // Add message to chat
+        function addMessage(text, speaker) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(speaker);
+            
+            // Format text as preformatted code if it contains newlines
+            if (text.includes('\n')) {
+                const pre = document.createElement('pre');
+                pre.textContent = text;
+                messageElement.appendChild(pre);
+            } else {
+                messageElement.textContent = text;
+            }
+            
+            chatContainer.appendChild(messageElement);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // Send message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (message && socket && socket.readyState === WebSocket.OPEN) {
+                // Add message to chat
+                addMessage(message, 'user');
+                
+                // Send message to server
+                socket.send(JSON.stringify({ query: message }));
+                
+                // Clear input
+                messageInput.value = '';
+            }
+        }
+        
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Example query buttons
+        queryButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                messageInput.value = button.textContent;
+                sendMessage();
+            });
+        });
+        
+        // Connect on page load
+        connect();
+    </script>
+</body>
+</html>

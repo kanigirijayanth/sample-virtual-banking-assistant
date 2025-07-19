@@ -97,65 +97,10 @@ def update_dredentials():
     except Exception as e:
         print(f"Error refreshing credentials: {str(e)}", flush=True)
 
-async def get_account_info(params: FunctionCallParams):
-    account_id = params.arguments.get("account_id", "")
-    if not account_id:
-        await params.result_callback({
-            "message": "Please provide an AWS account ID or name to look up."
-        })
-        return
-        
-    # Use our account retriever with Nova Lite to get account information
-    from aws_account_retriever import AWSAccountRetriever
-    
-    try:
-        retriever = AWSAccountRetriever(kb_id="KCZTEHHZFA")
-        account_info = retriever.get_formatted_account_info(account_id)
-        
-        await params.result_callback({
-            "account_id": account_id,
-            "information": account_info
-        })
-    except Exception as e:
-        print(f"Error retrieving account information: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        await params.result_callback({
-            "message": f"Error retrieving account information: {str(e)}"
-        })
+# Import account functions
+from account_functions import get_account_info, list_accounts, get_accounts_by_classification, get_accounts_by_status, get_total_cost
 
-async def list_accounts(params: FunctionCallParams):
-    """List all AWS accounts from the knowledge base"""
-    # Use our account retriever with Nova Lite
-    from aws_account_retriever import AWSAccountRetriever
-    
-    try:
-        retriever = AWSAccountRetriever(kb_id="KCZTEHHZFA")
-        account_info = retriever.get_formatted_account_info()
-        
-        await params.result_callback({
-            "accounts": account_info
-        })
-    except Exception as e:
-        print(f"Error retrieving account information: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        # Fallback to the knowledge base if there's an error
-        kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
-        query = "list all AWS account numbers and their owners"
-        kb_info = kb_enhancer.retrieve_from_kb(query)
-        
-        if kb_info:
-            await params.result_callback({
-                "accounts": kb_info
-            })
-        else:
-            await params.result_callback({
-                "message": "No account information found in the knowledge base."
-            })
-
+# Create function schemas
 account_function = FunctionSchema(
     name="get_account_info",
     description="Get information about an AWS account.",
@@ -170,26 +115,50 @@ account_function = FunctionSchema(
 
 list_accounts_function = FunctionSchema(
     name="list_accounts",
-    description="List all AWS accounts from the knowledge base.",
+    description="List all AWS accounts.",
     properties={},
     required=[],
 )
 
-# Create KB function schema
-kb_function = FunctionSchema(
-    name="get_kb_information",
-    description="Get information from the knowledge base about cloud operations, AWS services, and best practices.",
+classification_function = FunctionSchema(
+    name="get_accounts_by_classification",
+    description="Get AWS accounts by classification.",
     properties={
-        "query": {
+        "classification": {
             "type": "string",
-            "description": "The query to search for in the knowledge base.",
+            "description": "The classification to filter accounts by (e.g., Class-1, Class-2, Class-3).",
         }
     },
-    required=["query"],
+    required=["classification"],
+)
+
+status_function = FunctionSchema(
+    name="get_accounts_by_status",
+    description="Get AWS accounts by status.",
+    properties={
+        "status": {
+            "type": "string",
+            "description": "The status to filter accounts by (ACTIVE or SUSPENDED).",
+        }
+    },
+    required=["status"],
+)
+
+cost_function = FunctionSchema(
+    name="get_total_cost",
+    description="Get total cost of all AWS accounts.",
+    properties={},
+    required=[],
 )
 
 # Create tools schema
-tools = ToolsSchema(standard_tools=[account_function, list_accounts_function, kb_function])
+tools = ToolsSchema(standard_tools=[
+    account_function, 
+    list_accounts_function, 
+    classification_function,
+    status_function,
+    cost_function
+])
 
 async def setup(websocket: WebSocket):
     """
@@ -206,12 +175,9 @@ async def setup(websocket: WebSocket):
     """
     update_dredentials()
     
-    # Initialize knowledge base enhancer
-    kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
-    
-    # Enhance system instruction with KB capabilities
+    # Read system instruction from prompt.txt
     base_instruction = Path('prompt.txt').read_text()
-    system_instruction = kb_enhancer.enhance_system_prompt(base_instruction) + f"\n{AWSNovaSonicLLMService.AWAIT_TRIGGER_ASSISTANT_RESPONSE_INSTRUCTION}"
+    system_instruction = base_instruction + f"\n{AWSNovaSonicLLMService.AWAIT_TRIGGER_ASSISTANT_RESPONSE_INSTRUCTION}"
 
     # Configure WebSocket transport with audio processing capabilities
     transport = FastAPIWebsocketTransport(websocket, FastAPIWebsocketParams(
@@ -243,7 +209,9 @@ async def setup(websocket: WebSocket):
     # Register functions for function calls
     llm.register_function("get_account_info", get_account_info)
     llm.register_function("list_accounts", list_accounts)
-    llm.register_function("get_kb_information", get_kb_information)
+    llm.register_function("get_accounts_by_classification", get_accounts_by_classification)
+    llm.register_function("get_accounts_by_status", get_accounts_by_status)
+    llm.register_function("get_total_cost", get_total_cost)
 
     # Set up conversation context
     context = OpenAILLMContext(
