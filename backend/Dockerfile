@@ -24,11 +24,15 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy application code
 COPY app/ .
 
+# Copy AWS_AccountDetails.csv to root directory
+COPY AWS_AccountDetails.csv /AWS_AccountDetails.csv
+
 # Install curl and ffmpeg
 RUN apt-get update && apt-get install -y curl ffmpeg && rm -rf /var/lib/apt/lists/*
 
 # Set proper permissions
 RUN chown -R appuser:appuser /app
+RUN chown appuser:appuser /AWS_AccountDetails.csv
 
 # Switch to non-root user
 USER appuser
