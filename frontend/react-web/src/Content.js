@@ -86,29 +86,47 @@ function Content({ signOut, user }) {
      */
     const initAudioWorklet = async () => {
         try {
+            // Close any existing audio context
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                await audioContextRef.current.close();
+            }
+            
+            // Create new audio context
             audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({
                 sampleRate: SAMPLE_RATE
             });
-
+            
+            console.log('Loading audio processor module...');
             await audioContextRef.current.audioWorklet.addModule('/audio-processor.js');
+            console.log('Audio processor module loaded successfully');
+            
+            // Create AudioWorkletNode
             audioWorkletNodeRef.current = new AudioWorkletNode(
                 audioContextRef.current,
                 'audio-processor'
             );
-
+            
             // Handle messages from audio processor
             audioWorkletNodeRef.current.port.onmessage = (event) => {
                 if (event.data === 'needData') {
                     setTalking(false);
                 }
             };
-
+            
+            // Connect to audio output
             audioWorkletNodeRef.current.connect(audioContextRef.current.destination);
-            await audioContextRef.current.resume();
-
+            
+            // Resume audio context
+            if (audioContextRef.current.state !== 'running') {
+                await audioContextRef.current.resume();
+                console.log('Audio context resumed successfully');
+            }
+            
             console.log('AudioWorklet initialized successfully');
+            return true;
         } catch (error) {
             console.error('Failed to initialize AudioWorklet:', error);
+            return false;
         }
     };
 
@@ -117,51 +135,87 @@ function Content({ signOut, user }) {
      */
     const initMicrophone = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Request microphone access
+            console.log('Requesting microphone access...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            console.log('Microphone access granted');
+            
+            // Create audio source from microphone stream
             const source = audioContextRef.current.createMediaStreamSource(stream);
             const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-
+            
             source.connect(processor);
-
+            
             // Connect to destination with zero gain to prevent feedback
             const gainNode = audioContextRef.current.createGain();
             gainNode.gain.value = 0;
             processor.connect(gainNode);
             gainNode.connect(audioContextRef.current.destination);
-
+            
             // Process and send audio data
             processor.onaudioprocess = (event) => {
-                const input = event.inputBuffer.getChannelData(0);
-                const pcm16 = floatToPcm16(input);
-                const buffer = new ArrayBuffer(pcm16.length * 2);
-                const view = new DataView(buffer);
-                pcm16.forEach((value, index) => view.setInt16(index * 2, value, true));
-                const bytes = new Uint8Array(buffer);
-                const base64 = btoa(String.fromCharCode.apply(null, bytes));
-
-                if (wsRef.current?.readyState === WebSocket.OPEN) {
+                if (wsRef.current?.readyState !== WebSocket.OPEN) {
+                    return; // Don't process audio if WebSocket is not open
+                }
+                
+                try {
+                    const input = event.inputBuffer.getChannelData(0);
+                    const pcm16 = floatToPcm16(input);
+                    const buffer = new ArrayBuffer(pcm16.length * 2);
+                    const view = new DataView(buffer);
+                    pcm16.forEach((value, index) => view.setInt16(index * 2, value, true));
+                    const bytes = new Uint8Array(buffer);
+                    const base64 = btoa(String.fromCharCode.apply(null, bytes));
+                    
                     wsRef.current.send(base64);
+                } catch (error) {
+                    console.error('Error processing microphone data:', error);
                 }
             };
+            
+            console.log('Microphone initialized successfully');
+            return true;
         } catch (error) {
             console.error('Failed to initialize microphone:', error);
+            
+            // Show user-friendly error if microphone access is denied
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                alert('Microphone access is required for this application to work. Please allow microphone access and try again.');
+            }
+            
+            return false;
         }
     };
 
     // Setup and cleanup effect
     useEffect(() => {
+        let isComponentMounted = true;
+        
         const cleanup = () => {
+            console.log('Cleaning up audio and WebSocket resources');
+            
             // Close WebSocket connection
-            if (wsRef.current?.readyState === WebSocket.OPEN) {
-                wsRef.current.close();
+            if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+                console.log('Closing WebSocket connection');
+                wsRef.current.close(1000, 'User disengaged');
             }
+            
             // Clean up audio context
             if (audioContextRef.current?.state !== 'closed') {
+                console.log('Closing audio context');
                 if (audioWorkletNodeRef.current) {
                     audioWorkletNodeRef.current.disconnect();
                 }
                 if (audioContextRef.current) {
-                    audioContextRef.current.close();
+                    audioContextRef.current.close().catch(err => {
+                        console.error('Error closing audio context:', err);
+                    });
                 }
             }
         };
@@ -173,72 +227,120 @@ function Content({ signOut, user }) {
 
         // Initialize audio and WebSocket
         const initAudio = async () => {
-            await initAudioWorklet();
-
-            wsRef.current = new WebSocket(apiUrl, apiKey);
-
-            wsRef.current.onopen = async () => {
-                console.log('WebSocket connected');
-                await initMicrophone();
-            };
-
-            wsRef.current.onmessage = async (event) => {
-                const chunk = JSON.parse(event.data);
-
-                if (chunk.event === 'stop') {
-                    console.log('Interruption')
-                    audioWorkletNodeRef.current?.port.postMessage({
-                        type: 'stop'
-                    });
-
-                    setTalking(false);
-
-                } else if (chunk.event === 'media') {
-                    try {
-                        const base64Data = chunk.data;
-                        const binaryString = atob(base64Data);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
+            console.log('Initializing audio system...');
+            const audioInitialized = await initAudioWorklet();
+            
+            if (!audioInitialized || !isComponentMounted) {
+                console.log('Audio initialization failed or component unmounted');
+                if (isComponentMounted) {
+                    setEngaged(false);
+                }
+                return;
+            }
+            
+            // Create WebSocket with timeout and retry logic
+            const connectWebSocket = () => {
+                try {
+                    console.log('Attempting to connect WebSocket...');
+                    wsRef.current = new WebSocket(apiUrl, apiKey);
+                    
+                    // Set a connection timeout
+                    const connectionTimeout = setTimeout(() => {
+                        if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
+                            console.log('WebSocket connection timeout, retrying...');
+                            wsRef.current.close();
+                            connectWebSocket();
                         }
-
-                        const float32Array = pcm16ToFloat(bytes.buffer);
-
-                        if (float32Array.length > 0) {
-                            audioWorkletNodeRef.current?.port.postMessage({
-                                type: 'data',
-                                audio: float32Array
-                            });
-
-                            if (!isTalking) {
-                                setTalking(true);
+                    }, 5000);
+                    
+                    wsRef.current.onopen = async () => {
+                        console.log('WebSocket connected successfully');
+                        clearTimeout(connectionTimeout);
+                        await initMicrophone();
+                    };
+                    
+                    wsRef.current.onmessage = async (event) => {
+                        try {
+                            const chunk = JSON.parse(event.data);
+                            
+                            if (chunk.event === 'stop') {
+                                console.log('Interruption');
+                                if (audioWorkletNodeRef.current) {
+                                    audioWorkletNodeRef.current.port.postMessage({
+                                        type: 'stop'
+                                    });
+                                }
+                                setTalking(false);
+                                
+                            } else if (chunk.event === 'media') {
+                                try {
+                                    const base64Data = chunk.data;
+                                    const binaryString = atob(base64Data);
+                                    const bytes = new Uint8Array(binaryString.length);
+                                    for (let i = 0; i < binaryString.length; i++) {
+                                        bytes[i] = binaryString.charCodeAt(i);
+                                    }
+                                    
+                                    const float32Array = pcm16ToFloat(bytes.buffer);
+                                    
+                                    if (float32Array.length > 0 && audioWorkletNodeRef.current) {
+                                        audioWorkletNodeRef.current.port.postMessage({
+                                            type: 'data',
+                                            audio: float32Array
+                                        });
+                                        
+                                        if (!isTalking) {
+                                            setTalking(true);
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Error processing audio data:', error);
+                                }
+                            } else if (chunk.event === 'text') {
+                                setMessages(messages => [...messages, {
+                                    isMine: chunk.speaker === 'user',
+                                    text: chunk.data
+                                }]);
                             }
+                        } catch (error) {
+                            console.error('Error handling WebSocket message:', error);
                         }
-                    } catch (error) {
-                        console.error('Error processing audio data:', error);
-                    }
-                } else if (chunk.event === 'text') {
-                    setMessages(messages => [...messages, {
-                        isMine: chunk.speaker === 'user',
-                        text: chunk.data
-                    }]);
+                    };
+                    
+                    wsRef.current.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        clearTimeout(connectionTimeout);
+                        setTalking(false);
+                    };
+                    
+                    wsRef.current.onclose = (event) => {
+                        console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
+                        clearTimeout(connectionTimeout);
+                        setTalking(false);
+                        
+                        // Only set engaged to false if we're intentionally closing
+                        if (event.code !== 1000) {
+                            console.log('Abnormal closure, not disengaging');
+                        } else {
+                            setEngaged(false);
+                        }
+                    };
+                } catch (error) {
+                    console.error('Error creating WebSocket:', error);
                 }
             };
-
-            wsRef.current.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                setTalking(false);
-            };
-
-            wsRef.current.onclose = () => {
-                console.log('WebSocket closed');
-                setTalking(false);
-                setEngaged(false);
-            };
+            
+            // Initialize the WebSocket connection
+            connectWebSocket();
         };
 
         initAudio();
-        return cleanup;
+        
+        // Cleanup function for useEffect
+        return () => {
+            isComponentMounted = false;
+            cleanup();
+        };
     }, [isEngaged]);
 
     return (

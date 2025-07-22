@@ -56,17 +56,17 @@ class KnowledgeBaseEnhancer:
     Class to enhance the virtual banking assistant with knowledge base capabilities.
     """
     
-    def __init__(self, kb_id=None, region="us-east-1", max_results=3):
+    def __init__(self, kb_id="KCZTEHHZFA", region="us-east-1", max_results=3):
         """
         Initialize the knowledge base enhancer.
         
         Args:
-            kb_id (str): Knowledge base ID. If None, will try to get from environment variable.
+            kb_id (str): Knowledge base ID
             region (str): AWS region
             max_results (int): Maximum number of results to retrieve from the knowledge base
         """
         # Use specific knowledge base ID
-        self.kb_id = kb_id or os.environ.get("BEDROCK_KB_ID") or "KCZTEHHZFA"
+        self.kb_id = kb_id
         # Create the retrieval function
         self.retrieve_from_kb = create_kb_retrieval_function(self.kb_id, region)
         

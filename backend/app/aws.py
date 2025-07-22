@@ -11,6 +11,7 @@ bidirectional audio streaming, text generation, and function calling capabilitie
 Virtual Cloud Operations Assistant.
 """
 
+import os
 import asyncio
 import base64
 import json

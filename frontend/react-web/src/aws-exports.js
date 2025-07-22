@@ -54,7 +54,7 @@ export const apiKey = "vba_secure_api_key_2025_07_22" // Custom API key for the 
  * @constant
  * @type {string}
  */
-export const apiUrl = "ws://Virtua-Virtu-ix65A0yM2CSK-217a2e51d68cf7f8.elb.us-east-1.amazonaws.com/ws"
+export const apiUrl = "wss://Virtua-Virtu-ix65A0yM2CSK-217a2e51d68cf7f8.elb.us-east-1.amazonaws.com/ws"
 
 /**
  * Avatar .glb model filename

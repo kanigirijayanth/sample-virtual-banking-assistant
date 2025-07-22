@@ -47,10 +47,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-import httpx
-from fastapi import FastAPI, WebSocket, Request, Response
-import uvicorn
-
 # Import knowledge base integration
 from kb_integration import KnowledgeBaseEnhancer, get_kb_information
 
@@ -175,6 +171,18 @@ accounts_by_year_function = FunctionSchema(
     required=["year"],
 )
 
+kb_function = FunctionSchema(
+    name="get_kb_information",
+    description="Get information from the knowledge base about AWS accounts, policies, or cloud operations.",
+    properties={
+        "query": {
+            "type": "string",
+            "description": "The query to search for in the knowledge base.",
+        }
+    },
+    required=["query"],
+)
+
 # Create tools schema
 tools = ToolsSchema(standard_tools=[
     account_function, 
@@ -183,7 +191,8 @@ tools = ToolsSchema(standard_tools=[
     status_function,
     cost_function,
     provisioning_date_function,
-    accounts_by_year_function
+    accounts_by_year_function,
+    kb_function
 ])
 
 async def setup(websocket: WebSocket):
@@ -203,7 +212,14 @@ async def setup(websocket: WebSocket):
     
     # Read system instruction from prompt.txt
     base_instruction = Path('prompt.txt').read_text()
-    system_instruction = base_instruction + f"\n{AWSNovaSonicLLMService.AWAIT_TRIGGER_ASSISTANT_RESPONSE_INSTRUCTION}"
+    
+    # Initialize knowledge base enhancer with hardcoded KB ID
+    kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
+    
+    # Enhance system prompt with knowledge base instructions
+    enhanced_instruction = kb_enhancer.enhance_system_prompt(base_instruction)
+    
+    system_instruction = enhanced_instruction + f"\n{AWSNovaSonicLLMService.AWAIT_TRIGGER_ASSISTANT_RESPONSE_INSTRUCTION}"
 
     # Configure WebSocket transport with audio processing capabilities
     transport = FastAPIWebsocketTransport(websocket, FastAPIWebsocketParams(
@@ -240,6 +256,7 @@ async def setup(websocket: WebSocket):
     llm.register_function("get_total_cost", get_total_cost)
     llm.register_function("get_account_provisioning_date", get_account_provisioning_date)
     llm.register_function("get_accounts_by_year", get_accounts_by_year)
+    llm.register_function("get_kb_information", get_kb_information)
 
     # Set up conversation context
     context = OpenAILLMContext(
@@ -296,6 +313,21 @@ async def setup(websocket: WebSocket):
         """Logs transcript updates with timestamps."""
         for message in frame.messages:
             print(f"Transcript: [{message.timestamp}] {message.role}: {message.content}")
+            
+            # If this is a user message, try to enhance it with knowledge base information
+            if message.role == "user" and message.content:
+                try:
+                    # Initialize the knowledge base enhancer with hardcoded KB ID
+                    kb_enhancer = KnowledgeBaseEnhancer(kb_id="KCZTEHHZFA")
+                    
+                    # Retrieve information from the knowledge base
+                    kb_info = kb_enhancer.retrieve_from_kb(message.content)
+                    
+                    if kb_info:
+                        print(f"Knowledge base information retrieved: {kb_info[:100]}...")
+                except Exception as e:
+                    print(f"Error enhancing with knowledge base: {str(e)}")
+                    traceback.print_exc()
 
     runner = PipelineRunner(handle_sigint=False, force_gc=True)
     await runner.run(task)
