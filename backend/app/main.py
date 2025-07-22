@@ -73,7 +73,7 @@ from pipecat.processors.transcript_processor import TranscriptProcessor
 from base64_serializer import Base64AudioSerializer
 
 SAMPLE_RATE = 16000
-API_KEY = "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" # Replace with your actual API key before running
+API_KEY = "vba_secure_api_key_2025_07_22" # Custom API key for the virtual banking assistant
 
 def update_dredentials():
     """

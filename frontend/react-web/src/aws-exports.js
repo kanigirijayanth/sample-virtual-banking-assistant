@@ -32,9 +32,9 @@
 export const awsConfig = {
     Auth: {
         Cognito: {
-            userPoolClientId: '3vp3u5oa581qejgcr63eijk3hh',
-            userPoolId: 'us-east-1_J2ljpnicF',
-            identityPoolId: 'us-east-1:448cf32d-8852-4bc6-a7e7-d8adbe7d2581',
+            userPoolClientId: '23ia4oj5lllt2ok95c4poc5n2l',
+            userPoolId: 'us-east-1_Vmj0l7dxO',
+            identityPoolId: 'us-east-1:090daffe-4b9b-4610-86b2-01762237984b',
             region: 'us-east-1'
         }
     }
@@ -46,7 +46,7 @@ export const awsConfig = {
  * @constant
  * @type {string}
  */
-export const apiKey = "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" // Replace with your actual API key before running
+export const apiKey = "vba_secure_api_key_2025_07_22" // Custom API key for the virtual banking assistant
 
 /**
  * WebSocket endpoint URL
@@ -54,7 +54,7 @@ export const apiKey = "sk_live_51NzQWHSIANER2vP8kTGkZQBfwwQCzVQTLKJGZq7Vy9JmYnpG
  * @constant
  * @type {string}
  */
-export const apiUrl = "ws://Virtua-Virtu-9RjKo1Buhij1-b8b68f5b845e5563.elb.us-east-1.amazonaws.com/ws"
+export const apiUrl = "ws://Virtua-Virtu-ix65A0yM2CSK-217a2e51d68cf7f8.elb.us-east-1.amazonaws.com/ws"
 
 /**
  * Avatar .glb model filename
