@@ -246,6 +246,7 @@ function Content({ signOut, user }) {
             {/* Header with navigation */}
             <Navbar
                 className='header'
+                bg='light'
                 expand='lg'
                 style={{
                     transition: 'opacity 0.3s ease',
